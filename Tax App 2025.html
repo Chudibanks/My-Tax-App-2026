@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nigeria Tax Calculator 2026</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f4f4; }
+.container { max-width: 600px; margin: auto; background: #fff; padding: 1.6rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+input, select, button { width: 100%; padding: 0.8rem; margin: 0.6rem 0; font-size: 1rem; border: 1px solid #ccc; border-radius: 5px; }
+button { background: #007bff; color: #fff; border: none; cursor: pointer; }
+button:hover { background: #0056b3; }
+.result { margin-top: 1.2rem; font-size: 1.1rem; }
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+th, td { border: 1px solid #ccc; padding: 0.6rem; text-align: center; }
+th { background: #007bff; color: white; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>Nigeria Tax Calculator (2026)</h2>
+
+    <label>Taxpayer Type</label>
+    <select id="taxCategory" onchange="updateFields()">
+        <option value="employee">Employee (PAYE)</option>
+        <option value="freelancer">Freelancer / Self-employed</option>
+        <option value="company">Company</option>
+        <option value="other">Other Income</option>
+    </select>
+
+    <div id="incomeFields">
+        <label>Annual Income / Revenue (₦)</label>
+        <input type="number" id="income" placeholder="e.g. 4,000,000" min="0">
+    </div>
+
+    <div id="deductionFields">
+        <label>Pension Contribution (₦)</label>
+        <input type="number" id="pension" placeholder="Optional" min="0">
+
+        <label>NHIS/NHF Contribution (₦)</label>
+        <input type="number" id="nhis" placeholder="Optional" min="0">
+
+        <label>Rent Relief (₦)</label>
+        <input type="number" id="rent" placeholder="Optional" min="0">
+
+        <label>Other Deductions (₦)</label>
+        <input type="number" id="otherDeduct" placeholder="Optional" min="0">
+    </div>
+
+    <div id="additionalTaxes">
+        <label>Capital Gains (₦)</label>
+        <input type="number" id="cgt" placeholder="Optional" min="0">
+
+        <label>Withholding Tax (₦)</label>
+        <input type="number" id="wht" placeholder="Optional" min="0">
+
+        <label>VAT-able Income / Sales (₦)</label>
+        <input type="number" id="vat" placeholder="Optional" min="0">
+    </div>
+
+    <button onclick="calculateTax()">Calculate Tax</button>
+
+    <div class="result" id="output"></div>
+</div>
+
+<script>
+function updateFields() {
+    const category = document.getElementById("taxCategory").value;
+    document.getElementById("deductionFields").style.display = (category === "employee" || category === "freelancer") ? 'block' : 'none';
+    document.getElementById("additionalTaxes").style.display = (category !== "employee") ? 'block' : 'none';
+}
+
+function calculateTax() {
+    let category = document.getElementById("taxCategory").value;
+    let income = parseFloat(document.getElementById("income").value) || 0;
+    let pension = parseFloat(document.getElementById("pension").value) || 0;
+    let nhis = parseFloat(document.getElementById("nhis").value) || 0;
+    let rent = parseFloat(document.getElementById("rent").value) || 0;
+    let otherDeduct = parseFloat(document.getElementById("otherDeduct").value) || 0;
+    let cgtIncome = parseFloat(document.getElementById("cgt").value) || 0;
+    let whtIncome = parseFloat(document.getElementById("wht").value) || 0;
+    let vatIncome = parseFloat(document.getElementById("vat").value) || 0;
+
+    let output = '';
+    let totalTax = 0;
+
+    if (category === "employee" || category === "freelancer") {
+        // PAYE progressive tax brackets
+        let taxable = Math.max(0, income - (pension + nhis + rent + otherDeduct));
+        let brackets = [
+            { limit: 800000, rate: 0 },
+            { limit: 2200000, rate: 0.15 },
+            { limit: 9000000, rate: 0.18 },
+            { limit: 13000000, rate: 0.21 },
+            { limit: 25000000, rate: 0.23 },
+            { limit: Infinity, rate: 0.25 }
+        ];
+
+        let remaining = taxable, tax = 0, lower = 0;
+        for (let b of brackets) {
+            if (remaining <= 0) break;
+            let amount = Math.min(remaining, b.limit - lower);
+            tax += amount * b.rate;
+            remaining -= amount;
+            lower = b.limit;
+        }
+
+        output += `<table>
+            <tr><th>Category</th><th>Taxable Income</th><th>Tax Rate</th><th>Tax Payable</th></tr>
+            <tr><td>PAYE</td><td>₦${taxable.toLocaleString()}</td><td>Progressive</td><td>₦${tax.toLocaleString()}</td></tr>
+        </table>`;
+        totalTax += tax;
+    }
+
+    if (category === "company") {
+        // Companies taxed 30% of profit
+        let tax = income * 0.30;
+        output += `<table>
+            <tr><th>Category</th><th>Taxable Income</th><th>Tax Rate</th><th>Tax Payable</th></tr>
+            <tr><td>Corporate Tax</td><td>₦${income.toLocaleString()}</td><td>30%</td><td>₦${tax.toLocaleString()}</td></tr>
+        </table>`;
+        totalTax += tax;
+    }
+
+    if (cgtIncome > 0) {
+        let tax = cgtIncome * 0.10;
+        output += `<p>Capital Gains Tax (10%): ₦${tax.toLocaleString()}</p>`;
+        totalTax += tax;
+    }
+
+    if (whtIncome > 0) {
+        let tax = whtIncome * 0.05;
+        output += `<p>Withholding Tax (5%): ₦${tax.toLocaleString()}</p>`;
+        totalTax += tax;
+    }
+
+    if (vatIncome > 0) {
+        let tax = vatIncome * 0.075;
+        output += `<p>VAT (7.5%): ₦${tax.toLocaleString()}</p>`;
+        totalTax += tax;
+    }
+
+    output += `<h3>Total Tax Payable: ₦${totalTax.toLocaleString()}</h3>`;
+    document.getElementById("output").innerHTML = output;
+}
+
+// Initialize field display
+updateFields();
+</script>
+</body>
+</html>
